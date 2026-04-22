@@ -25,9 +25,9 @@ const footerLinks = {
 
 const socialLinks = [
   { icon: <Instagram size={20} />, label: 'Instagram', href: 'https://www.instagram.com/caoroverde' },
-  { icon: <Facebook size={20} />, label: 'Facebook', href: 'https://facebook.com' },
-  { icon: <Youtube size={20} />, label: 'YouTube', href: 'https://youtube.com' },
-  { icon: <Twitter size={20} />, label: 'Twitter / X', href: 'https://twitter.com' },
+  { icon: <Facebook size={20} />, label: 'Facebook', href: 'https://www.facebook.com/caovoficial/' },
+  { icon: <Youtube size={20} />, label: 'YouTube', href: 'https://www.youtube.com/@clubatleticooroverde6575' },
+  //{ icon: <Twitter size={20} />, label: 'Twitter / X', href: 'https://twitter.com' },
 ];
 
 
