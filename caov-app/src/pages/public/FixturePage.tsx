@@ -1,21 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, MapPin, ChevronRight } from '../../icons';
-import { mockMatches, mockDisciplines } from '../../data/mockData';
+import { supabase } from '../../lib/supabaseClient';
 import { formatMatchDate, isPast } from '../../utils/dateUtils';
 import './FixturePage.css';
 
 export default function FixturePage() {
   const [activeDiscipline, setActiveDiscipline] = useState('Todos');
+  const [matches, setMatches] = useState<any[]>([]);
+  const [dbDisciplines, setDbDisciplines] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const disciplines = ['Todos', ...Array.from(new Set(mockDisciplines.map(d => d.name)))];
+  useEffect(() => {
+    const fetchData = async () => {
+      const [{ data: mData }, { data: dData }] = await Promise.all([
+        supabase.from('partidos').select('*, disciplina:disciplinas(name, category)').order('match_date', { ascending: true }),
+        supabase.from('disciplinas').select('*').eq('is_active', true).order('sort_order')
+      ]);
+      if (mData) setMatches(mData);
+      if (dData) setDbDisciplines(dData);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
-  const filtered = mockMatches.filter(m =>
-    activeDiscipline === 'Todos' || m.discipline?.name === activeDiscipline
+  const disciplines = ['Todos', ...Array.from(new Set(dbDisciplines.map(d => d.name)))];
+
+  const filtered = matches.filter(m =>
+    activeDiscipline === 'Todos' || m.disciplina?.name === activeDiscipline
   );
 
   const currentDisciplines = activeDiscipline === 'Todos' 
-    ? mockDisciplines 
-    : mockDisciplines.filter(d => d.name === activeDiscipline);
+    ? dbDisciplines 
+    : dbDisciplines.filter(d => d.name === activeDiscipline);
 
   const upcoming = filtered.filter(m => !isPast(m.match_date));
   const results = filtered.filter(m => isPast(m.match_date) && m.result !== 'Pendiente');
@@ -50,34 +66,40 @@ export default function FixturePage() {
             </div>
           </div>
 
-          <div className="fixture-sections">
-            {/* Training Schedules */}
-            <div style={{ marginBottom: 'var(--space-12)' }}>
-              <h2 className="fixture-section-title" style={{ color: 'var(--color-primary-dark)', borderBottom: '2px solid rgba(26,122,60,0.1)' }}>
-                <Calendar size={20} /> Horarios de Entrenamiento
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
-                {currentDisciplines.map(d => (
-                  <div key={d.id} style={{
-                    background: 'var(--color-bg-section)', 
-                    border: '1px solid var(--color-border)', 
-                    borderRadius: 'var(--radius-lg)', 
-                    padding: 'var(--space-4)'
-                  }}>
-                    <strong style={{ display: 'block', fontSize: '1.1rem', marginBottom: '8px', color: 'var(--color-text-primary)' }}>
-                      {d.name} {d.category && <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-muted)', marginLeft: '4px' }}>• {d.category}</span>}
-                    </strong>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
-                      <Calendar size={15} style={{ color: 'var(--color-primary)' }} /> 
-                      {d.schedules || 'Por confirmar'}
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
+              <span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
             </div>
+          ) : (
+            <div className="fixture-sections">
+              {/* Training Schedules */}
+              <div style={{ marginBottom: 'var(--space-12)' }}>
+                <h2 className="fixture-section-title" style={{ color: 'var(--color-primary-dark)', borderBottom: '2px solid rgba(26,122,60,0.1)' }}>
+                  <Calendar size={20} /> Horarios de Entrenamiento
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-4)' }}>
+                  {currentDisciplines.map(d => (
+                    <div key={d.id} style={{
+                      background: 'var(--color-bg-section)', 
+                      border: '1px solid var(--color-border)', 
+                      borderRadius: 'var(--radius-lg)', 
+                      padding: 'var(--space-4)'
+                    }}>
+                      <strong style={{ display: 'block', fontSize: '1.1rem', marginBottom: '8px', color: 'var(--color-text-primary)' }}>
+                        {d.name} {d.category && <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--color-text-muted)', marginLeft: '4px' }}>• {d.category}</span>}
+                      </strong>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>
+                        <Calendar size={15} style={{ color: 'var(--color-primary)' }} /> 
+                        {/* Como no hay campo schedules en la BD actualmente, mostramos un genérico o nada */}
+                        Por consultar en secretaría
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            {/* Upcoming Matches */}
-            <div>
+              {/* Upcoming Matches */}
+              <div>
               <h2 className="fixture-section-title">
                 <Calendar size={20} /> Próximos Partidos
               </h2>
@@ -86,9 +108,9 @@ export default function FixturePage() {
                   {upcoming.map(match => (
                     <div key={match.id} className="fixture-row">
                       <div className="fixture-row-discipline">
-                        <span className="badge badge-outline">{match.discipline?.name}</span>
+                        <span className="badge badge-outline">{match.disciplina?.name}</span>
                         <span className="badge badge-ghost" style={{background:'var(--color-bg-section)',color:'var(--color-text-muted)'}}>
-                          {match.discipline?.category}
+                          {match.disciplina?.category}
                         </span>
                       </div>
                       <div className="fixture-row-teams">
@@ -140,7 +162,7 @@ export default function FixturePage() {
                     return (
                       <div key={match.id} className="fixture-row">
                         <div className="fixture-row-discipline">
-                          <span className="badge badge-outline">{match.discipline?.name}</span>
+                          <span className="badge badge-outline">{match.disciplina?.name}</span>
                         </div>
                         <div className="fixture-row-teams">
                           <div className="fixture-team home">
@@ -178,7 +200,8 @@ export default function FixturePage() {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

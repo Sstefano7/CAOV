@@ -1,11 +1,48 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient';
 import { Calendar, ArrowLeft, Tag } from '../../icons';
-import { mockNews } from '../../data/mockData';
 import { formatDate } from '../../utils/dateUtils';
 
 export default function NewsDetailPage() {
   const { slug } = useParams();
-  const article = mockNews.find(n => n.slug === slug);
+  const [article, setArticle] = useState<any>(null);
+  const [related, setRelated] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('noticias')
+        .select('*')
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .single();
+      
+      if (data) {
+        setArticle(data);
+        const { data: relatedData } = await supabase
+          .from('noticias')
+          .select('*')
+          .eq('category', data.category)
+          .eq('is_published', true)
+          .neq('id', data.id)
+          .limit(3);
+        if (relatedData) setRelated(relatedData);
+      }
+      setLoading(false);
+    };
+    if (slug) fetchArticle();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
+        <span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
+      </div>
+    );
+  }
 
   if (!article) {
     return (
@@ -22,8 +59,6 @@ export default function NewsDetailPage() {
       </div>
     );
   }
-
-  const related = mockNews.filter(n => n.id !== article.id && n.category === article.category).slice(0, 3);
 
   return (
     <div>
@@ -53,7 +88,7 @@ export default function NewsDetailPage() {
           <div style={{background:'var(--color-surface)',borderRadius:'var(--radius-2xl)',padding:'var(--space-10)',border:'1px solid var(--color-border)',marginBottom:'var(--space-10)'}}>
             <div
               style={{fontFamily:'var(--font-body)',fontSize:'var(--text-lg)',lineHeight:1.8,color:'var(--color-text-primary)'}}
-              dangerouslySetInnerHTML={{ __html: article.content + '<p>El partido fue intenso desde el primer minuto. El equipo local salió decidido a imponer condiciones y el trabajo de toda la semana se vio reflejado en el rendimiento colectivo. Los jugadores demostraron una vez más el espíritu verde y blanco que caracteriza al club desde sus orígenes.</p><p>La hinchada acompañó de principio a fin, llenando las gradas con banderas y colores. Este resultado consolida al equipo en la cima de la tabla de posiciones y aumenta las esperanzas de cara a la recta final del campeonato.</p><blockquote style="border-left:4px solid var(--color-primary);padding-left:1.5rem;margin:2rem 0;font-style:italic;color:var(--color-text-secondary);">"Estamos muy contentos con el trabajo del equipo. Fue un partido difícil pero los chicos lo resolvieron con inteligencia." — <strong>Cuerpo técnico</strong></blockquote><p>El próximo compromiso del equipo será el sábado 20 de abril en el estadio Municipal, donde recibirán a Atlético Crespo en un partido que promete ser igual de emocionante.</p>' }}
+              dangerouslySetInnerHTML={{ __html: article.content }}
             />
           </div>
 

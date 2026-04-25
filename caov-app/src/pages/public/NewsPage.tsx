@@ -1,17 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient';
 import { Search, ArrowRight, Calendar } from '../../icons';
-import { mockNews } from '../../data/mockData';
 import { formatRelativeDate } from '../../utils/dateUtils';
 import './NewsPage.css';
 
-const CATEGORIES = ['Todas', 'Fútbol', 'Básquet', 'Vóley', 'Institucional'];
-
 export default function NewsPage() {
+  const [news, setNews] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>(['Todas']);
   const [activeCategory, setActiveCategory] = useState('Todas');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const filtered = mockNews.filter(article => {
+  useEffect(() => {
+    const fetchNews = async () => {
+      const { data } = await supabase
+        .from('noticias')
+        .select('*')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false });
+
+      if (data) {
+        setNews(data);
+        const cats = Array.from(new Set(data.map(n => n.category).filter(Boolean))) as string[];
+        setCategories(['Todas', ...cats]);
+      }
+      setLoading(false);
+    };
+    fetchNews();
+  }, []);
+
+  const filtered = news.filter(article => {
     const matchCat = activeCategory === 'Todas' || article.category === activeCategory;
     const matchSearch = article.title.toLowerCase().includes(search.toLowerCase()) ||
       (article.excerpt || '').toLowerCase().includes(search.toLowerCase());
@@ -38,7 +57,7 @@ export default function NewsPage() {
           {/* Filters */}
           <div className="news-filters">
             <div className="tabs">
-              {CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <button
                   key={cat}
                   className={`tab ${activeCategory === cat ? 'active' : ''}`}
@@ -61,7 +80,11 @@ export default function NewsPage() {
           </div>
 
           {/* Results Grid */}
-          {filtered.length > 0 ? (
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
+              <span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
+            </div>
+          ) : filtered.length > 0 ? (
             <div className="news-full-grid stagger">
               {filtered.map((article, i) => (
                 <Link key={article.id} to={`/noticias/${article.slug}`} className="news-full-card animate-fade-in-up">

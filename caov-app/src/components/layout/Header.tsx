@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   Menu, X, ChevronDown,
-  LogIn, Star
+  LogIn, Star, User, Settings
 } from '../../icons';
+import { useAuth } from '../../context/AuthContext';
 import './Header.css';
 
 interface NavItem {
@@ -30,7 +31,7 @@ const navItems: NavItem[] = [
     label: 'Club',
     children: [
       { label: 'Historia', href: '/historia', icon: <span>📜</span> },
-      { label: 'Palmarés', href: '/palmares', icon: <span>🏆</span> },
+      { label: 'Logros y Títulos', href: '/logros', icon: <span>🏆</span> },
       { label: 'Galería', href: '/galeria', icon: <span>📸</span> },
       { label: 'Sponsors', href: '/sponsors', icon: <span>🤝</span> },
     ],
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
 ];
 
 export default function Header() {
+  const { user, isAdmin, profile, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -132,16 +134,33 @@ export default function Header() {
               ))}
             </ul>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons — dinámico según estado de sesión */}
             <div className="nav-actions">
-              <Link to="/login" className="btn btn-ghost btn-sm nav-btn-login">
-                <LogIn size={15} />
-                Ingresar
-              </Link>
-              <Link to="/registro" className="btn btn-primary btn-sm">
-                <Star size={14} />
-                Hacete Socio
-              </Link>
+              {user ? (
+                <>
+                  {isAdmin && (
+                    <Link to="/admin" className="btn btn-primary btn-sm">
+                      <Settings size={14} /> Panel Admin
+                    </Link>
+                  )}
+                  <Link to="/mi-cuenta" className="btn btn-ghost btn-sm nav-btn-login">
+                    <User size={15} />
+                    {profile?.full_name?.split(' ')[0] ?? 'Mi Cuenta'}
+                  </Link>
+                  <button onClick={signOut} className="btn btn-outline btn-sm" style={{ padding: '0 var(--space-3)' }}>
+                    <LogIn size={14} /> Salir
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="btn btn-ghost btn-sm nav-btn-login">
+                    <LogIn size={15} /> Ingresar
+                  </Link>
+                  <Link to="/registro" className="btn btn-primary btn-sm">
+                    <Star size={14} /> Hacete Socio
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Hamburger */}
@@ -163,12 +182,30 @@ export default function Header() {
           <div className="mobile-menu-inner">
             <MobileNav items={navItems} />
             <div className="mobile-cta">
-              <Link to="/login" className="btn btn-secondary btn-lg" style={{width:'100%', justifyContent:'center'}}>
-                <LogIn size={16} /> Ingresar
-              </Link>
-              <Link to="/registro" className="btn btn-primary btn-lg" style={{width:'100%', justifyContent:'center'}}>
-                <Star size={16} /> Hacete Socio
-              </Link>
+              {user ? (
+                <>
+                  {isAdmin && (
+                    <Link to="/admin" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
+                      <Settings size={16} /> Panel Admin
+                    </Link>
+                  )}
+                  <Link to="/mi-cuenta" className="btn btn-secondary btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
+                    <User size={16} /> Mi Cuenta
+                  </Link>
+                  <button onClick={signOut} className="btn btn-outline btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
+                    <LogIn size={16} /> Cerrar Sesión
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="btn btn-secondary btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
+                    <LogIn size={16} /> Ingresar
+                  </Link>
+                  <Link to="/registro" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
+                    <Star size={16} /> Hacete Socio
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

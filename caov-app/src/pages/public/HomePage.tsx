@@ -1,19 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient';
 import {
   ArrowRight, Calendar, MapPin, Trophy,
   Star, Users, Newspaper
 } from '../../icons';
-import { mockNews, mockMatches, mockSponsors, mockDisciplines, mockPalmares } from '../../data/mockData';
 import { formatMatchDate, formatRelativeDate, isPast } from '../../utils/dateUtils';
 import './HomePage.css';
 
 export default function HomePage() {
-  const upcomingMatches = mockMatches.filter(m => !isPast(m.match_date)).slice(0, 3);
-  const recentResults = mockMatches.filter(m => isPast(m.match_date) && m.result !== 'Pendiente').slice(0, 3);
+  const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
+  const [recentResults, setRecentResults] = useState<any[]>([]);
+  const [latestNews, setLatestNews] = useState<any[]>([]);
+  const [activeSponsors, setActiveSponsors] = useState<any[]>([]);
+  const [palmares, setPalmares] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      const [
+        { data: matchesData },
+        { data: newsData },
+        { data: sponsorsData },
+        { data: palmaresData }
+      ] = await Promise.all([
+        supabase.from('partidos').select('*, disciplina:disciplinas(name)').order('match_date', { ascending: true }),
+        supabase.from('noticias').select('*').eq('is_published', true).order('published_at', { ascending: false }).limit(4),
+        supabase.from('sponsors').select('*').eq('is_active', true),
+        supabase.from('logros').select('*, disciplina:disciplinas(name)').order('year', { ascending: false }).limit(4)
+      ]);
+
+      if (matchesData) {
+        setUpcomingMatches(matchesData.filter((m: any) => !isPast(m.match_date)).slice(0, 3));
+        setRecentResults(matchesData.filter((m: any) => isPast(m.match_date) && m.result !== 'Pendiente').reverse().slice(0, 3));
+      }
+      if (newsData) setLatestNews(newsData);
+      if (sponsorsData) setActiveSponsors(sponsorsData);
+      if (palmaresData) setPalmares(palmaresData);
+      setLoading(false);
+    };
+    fetchAll();
+  }, []);
+
   const featuredMatch = upcomingMatches[0];
-  const latestNews = mockNews.slice(0, 4);
-  const activeSponsors = mockSponsors.filter(s => s.is_active);
 
   return (
     <div className="home-page">
@@ -355,14 +384,14 @@ export default function HomePage() {
           </div>
 
           <div className="palmares-showcase">
-            {mockPalmares.slice(0, 4).map((trophy) => (
+            {palmares.map((trophy) => (
               <div key={trophy.id} className="trophy-card animate-fade-in-up">
                 <div className="trophy-icon">🏆</div>
                 <div className="trophy-year">{trophy.year}</div>
                 <h4 className="trophy-title">{trophy.title}</h4>
                 <p className="trophy-competition">{trophy.competition}</p>
-                {trophy.discipline && (
-                  <span className="badge badge-outline">{trophy.discipline.name}</span>
+                {trophy.disciplina && (
+                  <span className="badge badge-outline">{trophy.disciplina.name}</span>
                 )}
               </div>
             ))}

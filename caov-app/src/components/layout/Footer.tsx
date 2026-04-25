@@ -5,7 +5,7 @@ import './Footer.css';
 const footerLinks = {
   club: [
     { label: 'Historia', href: '/historia' },
-    { label: 'Palmarés', href: '/palmares' },
+    { label: 'Logros', href: '/logros' },
     { label: 'Galería', href: '/galeria' },
     { label: 'Sponsors', href: '/sponsors' },
   ],
@@ -109,7 +109,7 @@ export default function Footer() {
               <ul className="footer-contact-list">
                 <li>
                   <MapPin size={14} />
-                  <span>Av. San Martín 450, Oro Verde, Entre Ríos</span>
+                  <span>Los Jacarandaes 54, Oro Verde, Entre Ríos</span>
                 </li>
                 <li>
                   <Phone size={14} />

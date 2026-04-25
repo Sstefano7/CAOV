@@ -14,18 +14,30 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
+  const [isRejected, setIsRejected] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsRejected(false);
     setLoading(true);
 
-    const { error } = await signIn(form.email.trim(), form.password);
+    const result = await signIn(form.email.trim(), form.password);
 
-    if (error) {
-      setError(error);
-      setLoading(false);
+    setLoading(false);
+
+    if (result.error) {
+      setError(result.error);
+      if (result.status === 'rechazado') setIsRejected(true);
+      return;
+    }
+
+    // Redirigir según status devuelto por signIn
+    if (result.status === 'pendiente') {
+      navigate('/cuenta-pendiente', { replace: true });
+    } else if (result.status === 'superadmin' || result.status === 'admin') {
+      navigate('/admin', { replace: true });
     } else {
       navigate(from, { replace: true });
     }
@@ -56,8 +68,17 @@ export default function LoginPage() {
           <p className="auth-subtitle">Accedé a tu panel de socio</p>
 
           {error && (
-            <div className="auth-error" role="alert">
-              ⚠️ {error}
+            <div
+              className="auth-error"
+              role="alert"
+              style={isRejected ? { background: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b' } : {}}
+            >
+              {isRejected ? '🚫' : '⚠️'} {error}
+              {isRejected && (
+                <div style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-sm)' }}>
+                  <strong>Dirigite a las oficinas del club para más información.</strong>
+                </div>
+              )}
             </div>
           )}
 

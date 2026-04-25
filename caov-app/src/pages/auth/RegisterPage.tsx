@@ -73,6 +73,8 @@ export default function RegisterPage() {
       setError(error);
     } else {
       setSuccess(true);
+      // Redirigir al login tras 5 segundos
+      setTimeout(() => navigate('/login'), 5000);
     }
   };
 
@@ -84,16 +86,31 @@ export default function RegisterPage() {
           <div className="auth-bg-overlay" />
         </div>
         <div className="auth-card-wrap">
-          <div className="auth-card auth-success-card">
-            <div className="auth-success-icon">✅</div>
-            <h2 className="auth-title">¡Registro exitoso!</h2>
-            <p className="auth-subtitle">
-              Te enviamos un email de confirmación a <strong>{form.email}</strong>.<br />
-              Revisá tu bandeja y hacé clic en el enlace para activar tu cuenta.
+          <div className="auth-card auth-success-card" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '4rem', marginBottom: 'var(--space-4)' }}>🎉</div>
+            <h2 className="auth-title">¡Solicitud enviada!</h2>
+            <p className="auth-subtitle" style={{ lineHeight: 1.7 }}>
+              Tu solicitud de asociación al <strong>C.A.O.V.</strong> fue recibida correctamente.
+              <br /><br />
+              La <strong>administración del club</strong> revisará tu solicitud y te contactará
+              para informarte sobre tu aprobación.
             </p>
-            <Link to="/" className="btn btn-primary btn-lg" style={{ marginTop: 'var(--space-6)', width: '100%', justifyContent: 'center' }}>
+            <div style={{
+              background: 'var(--color-primary-light)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-4)',
+              margin: 'var(--space-6) 0',
+            }}>
+              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-primary-dark)', margin: 0 }}>
+                📧 Se te notificará en: <strong>{form.email}</strong>
+              </p>
+            </div>
+            <Link to="/" className="btn btn-primary btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
               Volver al inicio
             </Link>
+            <p style={{ marginTop: 'var(--space-3)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+              Redirigiendo al login en unos segundos...
+            </p>
           </div>
         </div>
       </div>
@@ -187,7 +204,7 @@ export default function RegisterPage() {
             </label>
 
             <button type="submit" className="btn btn-primary btn-lg auth-submit" disabled={loading}>
-              {loading ? <span className="spinner" /> : <><Star size={18} /> Asociarme al Club</>}
+              {loading ? <span className="spinner" /> : <><Star size={18} /> Solicitar asociación</>}
             </button>
           </form>
 

@@ -4,10 +4,15 @@ import { useAuth } from '../../context/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requireApproved?: boolean;
 }
 
-export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { user, loading, isAdmin } = useAuth();
+export default function ProtectedRoute({
+  children,
+  requireAdmin = false,
+  requireApproved = false,
+}: ProtectedRouteProps) {
+  const { user, loading, isAdmin, accountStatus } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -19,13 +24,27 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
   }
 
   if (!user) {
-    // Si no está logueado, lo mandamos al login y guardamos adonde quería ir
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
+  // Usuario con cuenta rechazada
+  if (accountStatus === 'rechazado') {
+    return <Navigate to="/cuenta-rechazada" replace />;
+  }
+
+  // Usuario con cuenta pendiente → solo puede ver la página de espera
+  if (accountStatus === 'pendiente' && location.pathname !== '/cuenta-pendiente') {
+    return <Navigate to="/cuenta-pendiente" replace />;
+  }
+
+  // Requiere admin
   if (requireAdmin && !isAdmin) {
-    // Si quiere ir a un área admin pero no tiene permisos, lo mandamos al panel normal
     return <Navigate to="/mi-cuenta" replace />;
+  }
+
+  // Requiere aprobado
+  if (requireApproved && accountStatus !== 'aprobado') {
+    return <Navigate to="/cuenta-pendiente" replace />;
   }
 
   return <>{children}</>;

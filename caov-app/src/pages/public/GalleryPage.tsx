@@ -1,16 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from '../../icons';
-import { mockGallery } from '../../data/mockData';
+import { supabase } from '../../lib/supabaseClient';
 import type { GalleryImage } from '../../types';
 
 export default function GalleryPage() {
+  const [images, setImages] = useState<GalleryImage[]>([]);
   const [selected, setSelected] = useState<GalleryImage | null>(null);
-  const events = ['Todos', ...Array.from(new Set(mockGallery.map(g => g.event_name).filter(Boolean)))];
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchImages = async () => {
+      const { data } = await supabase
+        .from('galeria')
+        .select('*, disciplina:disciplinas(name)')
+        .order('created_at', { ascending: false });
+      
+      if (data) {
+        const formatted = data.map((d: any) => ({
+          ...d,
+          event_name: d.event_name || d.disciplina?.name || 'General'
+        }));
+        setImages(formatted as GalleryImage[]);
+      }
+      setLoading(false);
+    };
+    fetchImages();
+  }, []);
+
+  const events = ['Todos', ...Array.from(new Set(images.map(g => g.event_name).filter(Boolean)))];
   const [activeEvent, setActiveEvent] = useState('Todos');
 
   const filtered = activeEvent === 'Todos'
-    ? mockGallery
-    : mockGallery.filter(g => g.event_name === activeEvent);
+    ? images
+    : images.filter(g => g.event_name === activeEvent);
 
   return (
     <div>
@@ -36,22 +58,32 @@ export default function GalleryPage() {
             </div>
           </div>
 
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'var(--space-4)'}}>
-            {filtered.map(img => (
-              <button
-                key={img.id}
-                onClick={() => setSelected(img)}
-                style={{padding:0,border:'none',background:'none',cursor:'pointer',borderRadius:'var(--radius-xl)',overflow:'hidden',display:'block',aspectRatio:'1',position:'relative'}}
-                className="card"
-              >
-                <img src={img.image_url} alt={img.title || ''} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.4s ease'}} />
-                {img.title && (
-                  <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'var(--space-3)',background:'linear-gradient(to top,rgba(0,0,0,0.7),transparent)',opacity:0,transition:'opacity 0.25s ease'}}>
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
+              <span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 'var(--space-12)', color: 'var(--color-text-muted)' }}>
+              No hay fotos en esta categoría.
+            </div>
+          ) : (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'var(--space-4)'}}>
+              {filtered.map(img => (
+                <button
+                  key={img.id}
+                  onClick={() => setSelected(img)}
+                  style={{padding:0,border:'none',background:'none',cursor:'pointer',borderRadius:'var(--radius-xl)',overflow:'hidden',display:'block',aspectRatio:'1',position:'relative'}}
+                  className="card"
+                >
+                  <img src={img.image_url} alt={img.title || ''} style={{width:'100%',height:'100%',objectFit:'cover',transition:'transform 0.4s ease'}} />
+                  {img.title && (
+                    <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'var(--space-3)',background:'linear-gradient(to top,rgba(0,0,0,0.7),transparent)',opacity:0,transition:'opacity 0.25s ease'}}>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
